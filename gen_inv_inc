@@ -165,25 +165,15 @@ void ForceEquipItem(object oPC, object oItem, int nSlot, int bClearComabt = TRUE
 ////////////////////////////////////////////////////////////////////////////////
 // Define All Implementations...
 
+
 //------------------------------------------------------------------------------
-int CountItemsWorn(object oPC) // Not including equipped skin!
-{
- int i = 0;
- if(GetIsObjectValid( GetItemInSlot(INVENTORY_SLOT_ARMS, oPC)))     { i+= 1; }
- if(GetIsObjectValid(GetItemInSlot(INVENTORY_SLOT_ARROWS, oPC)))    { i+= 1; }
- if(GetIsObjectValid(GetItemInSlot(INVENTORY_SLOT_BELT, oPC)))      { i+= 1; }
- if(GetIsObjectValid(GetItemInSlot(INVENTORY_SLOT_BOLTS, oPC)))     { i+= 1; }
- if(GetIsObjectValid(GetItemInSlot(INVENTORY_SLOT_BOOTS, oPC)))     { i+= 1; }
- if(GetIsObjectValid(GetItemInSlot(INVENTORY_SLOT_BULLETS, oPC)))   { i+= 1; }
- if(GetIsObjectValid(GetItemInSlot(INVENTORY_SLOT_CHEST, oPC)))     { i+= 1; }
- if(GetIsObjectValid(GetItemInSlot(INVENTORY_SLOT_CLOAK, oPC)))     { i+= 1; }
- if(GetIsObjectValid(GetItemInSlot(INVENTORY_SLOT_HEAD, oPC)))      { i+= 1; }
- if(GetIsObjectValid(GetItemInSlot(INVENTORY_SLOT_LEFTHAND, oPC)))  { i+= 1; }
- if(GetIsObjectValid(GetItemInSlot(INVENTORY_SLOT_LEFTRING, oPC)))  { i+= 1; }
- if(GetIsObjectValid(GetItemInSlot(INVENTORY_SLOT_NECK, oPC)))      { i+= 1; }
- if(GetIsObjectValid(GetItemInSlot(INVENTORY_SLOT_RIGHTHAND, oPC))) { i+= 1; }
- if(GetIsObjectValid(GetItemInSlot(INVENTORY_SLOT_RIGHTRING, oPC))) { i+= 1; }
- return i;
+int CountItemsWorn(object oPC){
+ int i = 0;  int c = 0; object oSlot = OBJECT_INVALID;
+ for(i=0;i<NUM_INVENTORY_SLOTS;i++){
+  oSlot = GetItemInSlot(i, oPC);
+  if(i != INVENTORY_SLOT_CARMOUR){
+   if(GetIsObjectValid(oSlot)){ c += 1; } }    }
+ return c;
 }
 
 //------------------------------------------------------------------------------
@@ -348,10 +338,7 @@ int TakeItemEquippedByTag(object oPC, string sTag, int nAmount = 1)
 //------------------------------------------------------------------------------
 int TakeItemEquippedByResRef(object oPC, string sResRef, int nAmount = 1)
 {
- int nCount = 0;
-  int nStackSize = 0;
-  int i = 0;
-  object oSlot;
+ int nCount = 0; int nStackSize = 0; int i = 0; object oSlot;
   if(nAmount == 0){
     for(i=0;i<NUM_INVENTORY_SLOTS;i++){
         oSlot = GetItemInSlot(i, oPC);
@@ -404,7 +391,6 @@ int TakeItemByTag(object oObject, string sTag, int nAmount = 1)
             oItem = GetNextItemInInventory(oObject); } }
     return nCount;
 }
-
 
 //------------------------------------------------------------------------------
 int TakeItemByResRef(object oObject, string sResRef, int nAmount = 1)
@@ -487,8 +473,6 @@ int GetIdentifiedGPValue(object oItem){
  if(oItem == OBJECT_INVALID) { return 0; }
  if(GetPlotFlag(oItem) == TRUE) { SetPlotFlag(oItem, FALSE); // Turn off Plot!
   DelayCommand(0.1, SetPlotFlag(oItem, TRUE));  } // Restore it!
- if(GetStolenFlag(oItem) == TRUE) { SetStolenFlag(oItem, FALSE);
-  DelayCommand(0.1, SetStolenFlag(oItem, TRUE)); }
  if(GetIdentified(oItem) != TRUE){ SetIdentified(oItem, TRUE);  // Identify the item....
   DelayCommand(0.1, SetIdentified(oItem, FALSE)); }  // Restore it...
  int iRet = GetGoldPieceValue(oItem);
@@ -496,161 +480,87 @@ int GetIdentifiedGPValue(object oItem){
 }
 //------------------------------------------------------------------------------
 int GetLevelOfItem(int nGPV){
- int nLevel = 0; int gp = nGPV;
-    //Return the level..  (Increased Efficiency by breaking into groups)
-    if(gp > 8199999) { nLevel = 60; }
-    else if(gp > 7199999) {
-     if(gp > 7999999) {nLevel = 59;}
-     else if(gp>7799999) {nLevel = 58;}
-     else if(gp>7599999) {nLevel = 57;}
-     else if(gp>7399999) {nLevel = 56;}
-     else if(gp>7199999) {nLevel = 55;} }
-    else if(gp > 6199999) {
-     if(gp>6999999) {nLevel = 54;}
-     else if(gp>6799999) {nLevel = 53;}
-     else if(gp>6599999) {nLevel = 52;}
-     else if(gp>6399999) {nLevel = 51;}
-     else if(gp>6199999) {nLevel = 50;} }
-    else if(gp>5199999) {
-     if(gp>5999999) {nLevel = 49;}
-     else if(gp>5799999) {nLevel = 48;}
-     else if(gp>5599999) {nLevel = 47;}
-     else if(gp>5399999) {nLevel = 46;}
-     else if(gp>5199999) {nLevel = 45;} }
-    else if(gp>4199999) {
-     if(gp>4999999) {nLevel = 44;}
-     else if(gp>4799999) {nLevel = 43;}
-     else if(gp>4599999) {nLevel = 42;}
-     else if(gp>4399999) {nLevel = 41;}
-     else if(gp>4199999) {nLevel = 40;} }
-    else if(gp>3199999){
-     if (gp>3999999) {nLevel = 39;}
-     else if(gp>3799999) {nLevel = 38;}
-     else if(gp>3599999) {nLevel = 37;}
-     else if(gp>3399999) {nLevel = 36;}
-     else if(gp>3199999) {nLevel = 35;} }
-    else if(gp>2199999) {
-     if(gp>2999999) {nLevel = 34;}
-     else if(gp>2799999) {nLevel = 33;}
-     else if(gp>2599999) {nLevel = 32;}
-     else if(gp>2399999) {nLevel = 31;}
-     else if(gp>2199999) {nLevel = 30;} }
-    else if(gp>1999999) {
-    if(gp>1999999) {nLevel = 29;}
-     else if(gp>1799999) {nLevel = 28;}
-     else if(gp>1599999) {nLevel = 27;}
-     else if(gp>1399999) {nLevel = 26;}
-     else if(gp>1999999) {nLevel = 25;} }
-    else if(gp>129999) {
-     if(gp>999999) {nLevel = 24;}
-     else if(gp>749999) {nLevel = 23;}
-     else if(gp>499999) {nLevel = 22;}
-     else if(gp>249999) {nLevel = 21;}
-     else if(gp>129999) {nLevel = 20;} }
-    else if(gp>49999) {
-     if(gp>109999) {nLevel = 19;}
-     else if(gp>89999) {nLevel = 18;}
-     else if(gp>74999) {nLevel = 17;}
-     else if(gp>64000) {nLevel = 16;}
-     else if(gp>49999) {nLevel = 15;} }
-    else if(gp>19999) {
-     if(gp>39999) {nLevel = 14;}
-     else if(gp>34999) {nLevel = 13;}
-     else if(gp>29999) {nLevel = 12;}
-     else if(gp>24999) {nLevel = 11;}
-     else if(gp>19999) {nLevel = 10;} }
-    else if(gp>4999) {
-     if(gp>14999) {nLevel = 9;}
-     else if(gp>11999) {nLevel = 8;}
-     else if(gp>8999) {nLevel = 7;}
-     else if(gp>6999) {nLevel = 6;}
-     else if(gp>4999) {nLevel = 5;}   }
-    else if(gp>=1000) {
-     if(gp>3499) {nLevel = 4;}
-     else if(gp>2499) {nLevel = 3;}
-     else if(gp>1499) {nLevel = 2;}
-     else if(gp>=1000) {nLevel = 1;} }
-    else { nLevel = 0; }
- return nLevel;
+ int nGP = nGPV;
+ if(nGP == 0) { return 0; }
+if(nGP >= 6000001){
+      if(nGP >= 8200001){ return 61; }
+ else if(nGP >= 8000001){ return 60; }
+ else if(nGP >= 7800001){ return 59; }
+ else if(nGP >= 7600001){ return 58; }
+ else if(nGP >= 7400001){ return 57; }
+ else if(nGP >= 7200001){ return 56; }
+ else if(nGP >= 7000001){ return 55; }
+ else if(nGP >= 6800001){ return 54; }
+ else if(nGP >= 6600001){ return 53; }
+ else if(nGP >= 6400001){ return 52; }
+ else if(nGP >= 6200001){ return 51; }
+ else if(nGP >= 6000001){ return 50; }
+}
+ else if(nGP >= 4000001){
+      if(nGP >= 5800001){ return 49; }
+ else if(nGP >= 5600001){ return 48; }
+ else if(nGP >= 5400001){ return 47; }
+ else if(nGP >= 5200001){ return 46; }
+ else if(nGP >= 5000001){ return 45; }
+ else if(nGP >= 4800001){ return 44; }
+ else if(nGP >= 4600001){ return 43; }
+ else if(nGP >= 4400001){ return 42; }
+ else if(nGP >= 4200001){ return 41; }
+ else if(nGP >= 4000001){ return 40; }
+}
+else if(nGP >= 2000001){
+      if(nGP >= 3800001){ return 39; }
+ else if(nGP >= 3600001){ return 38; }
+ else if(nGP >= 3400001){ return 37; }
+ else if(nGP >= 3200001){ return 38; }
+ else if(nGP >= 3000001){ return 35; }
+ else if(nGP >= 2800001){ return 34; }
+ else if(nGP >= 2600001){ return 33; }
+ else if(nGP >= 2400001){ return 32; }
+ else if(nGP >= 2200001){ return 31; }
+ else if(nGP >= 2000001){ return 30; }
+}
+else if(nGP >= 110001){
+ if(nGP >= 1800001){ return 29; }
+ else if(nGP >= 1600001){ return 28; }
+ else if(nGP >= 1400001){ return 27; }
+ else if(nGP >= 1200001){ return 26; }
+ else if(nGP >= 1000001){ return 25; }
+ else if(nGP >= 750001){ return 24; }
+ else if(nGP >= 500001){ return 23; }
+ else if(nGP >= 250001){ return 22; }
+ else if(nGP >= 130001){ return 21; }
+ else if(nGP >= 110001){ return 20; }
+}
+else if(nGP >= 15000){
+ if(nGP >= 90000){ return 19; }
+ else if(nGP >= 75001){ return 18; }
+ else if(nGP >= 65001){ return 17; }
+ else if(nGP >= 50001){ return 16; }
+ else if(nGP >= 40001){ return 15; }
+ else if(nGP >= 35001){ return 14; }
+ else if(nGP >= 30001){ return 13; }
+ else if(nGP >= 25001){ return 12; }
+ else if(nGP >= 19501){ return 11; }
+ else if(nGP >= 15001){ return 10; }
+}
+else {
+  if(nGP >= 12001){ return 9; }
+ else if(nGP >= 9001){ return 8; }
+ else if(nGP >= 6501){ return 7; }
+ else if(nGP >= 5001){ return 6; }
+ else if(nGP >= 3501){ return 5; }
+ else if(nGP >= 2501){ return 4; }
+ else if(nGP >= 1501){ return 3; }
+ else if(nGP >= 1001){ return 2; }
+ else if(nGP >= 1){ return 1; }
+}
+ return 0;
 }
 //------------------------------------------------------------------------------
 int GetItemLevel(object oItem){
- int nLevel = 0; int gp = GetIdentifiedGPValue(oItem);
-    //Return the level..  (Increased Efficiency by breaking into groups)
-    if(gp > 8199999) { nLevel = 60; }
-    else if(gp > 7199999) {
-     if(gp > 7999999) {nLevel = 59;}
-     else if(gp>7799999) {nLevel = 58;}
-     else if(gp>7599999) {nLevel = 57;}
-     else if(gp>7399999) {nLevel = 56;}
-     else if(gp>7199999) {nLevel = 55;} }
-    else if(gp > 6199999) {
-     if(gp>6999999) {nLevel = 54;}
-     else if(gp>6799999) {nLevel = 53;}
-     else if(gp>6599999) {nLevel = 52;}
-     else if(gp>6399999) {nLevel = 51;}
-     else if(gp>6199999) {nLevel = 50;} }
-    else if(gp>5199999) {
-     if(gp>5999999) {nLevel = 49;}
-     else if(gp>5799999) {nLevel = 48;}
-     else if(gp>5599999) {nLevel = 47;}
-     else if(gp>5399999) {nLevel = 46;}
-     else if(gp>5199999) {nLevel = 45;} }
-    else if(gp>4199999) {
-     if(gp>4999999) {nLevel = 44;}
-     else if(gp>4799999) {nLevel = 43;}
-     else if(gp>4599999) {nLevel = 42;}
-     else if(gp>4399999) {nLevel = 41;}
-     else if(gp>4199999) {nLevel = 40;} }
-    else if(gp>3199999){
-     if (gp>3999999) {nLevel = 39;}
-     else if(gp>3799999) {nLevel = 38;}
-     else if(gp>3599999) {nLevel = 37;}
-     else if(gp>3399999) {nLevel = 36;}
-     else if(gp>3199999) {nLevel = 35;} }
-    else if(gp>2199999) {
-     if(gp>2999999) {nLevel = 34;}
-     else if(gp>2799999) {nLevel = 33;}
-     else if(gp>2599999) {nLevel = 32;}
-     else if(gp>2399999) {nLevel = 31;}
-     else if(gp>2199999) {nLevel = 30;} }
-    else if(gp>1999999) {
-    if(gp>1999999) {nLevel = 29;}
-     else if(gp>1799999) {nLevel = 28;}
-     else if(gp>1599999) {nLevel = 27;}
-     else if(gp>1399999) {nLevel = 26;}
-     else if(gp>1999999) {nLevel = 25;} }
-    else if(gp>129999) {
-     if(gp>999999) {nLevel = 24;}
-     else if(gp>749999) {nLevel = 23;}
-     else if(gp>499999) {nLevel = 22;}
-     else if(gp>249999) {nLevel = 21;}
-     else if(gp>129999) {nLevel = 20;} }
-    else if(gp>49999) {
-     if(gp>109999) {nLevel = 19;}
-     else if(gp>89999) {nLevel = 18;}
-     else if(gp>74999) {nLevel = 17;}
-     else if(gp>64000) {nLevel = 16;}
-     else if(gp>49999) {nLevel = 15;} }
-    else if(gp>19999) {
-     if(gp>39999) {nLevel = 14;}
-     else if(gp>34999) {nLevel = 13;}
-     else if(gp>29999) {nLevel = 12;}
-     else if(gp>24999) {nLevel = 11;}
-     else if(gp>19999) {nLevel = 10;} }
-    else if(gp>4999) {
-     if(gp>14999) {nLevel = 9;}
-     else if(gp>11999) {nLevel = 8;}
-     else if(gp>8999) {nLevel = 7;}
-     else if(gp>6999) {nLevel = 6;}
-     else if(gp>4999) {nLevel = 5;}   }
-    else if(gp>=1000) {
-     if(gp>3499) {nLevel = 4;}
-     else if(gp>2499) {nLevel = 3;}
-     else if(gp>1499) {nLevel = 2;}
-     else if(gp>=1000) {nLevel = 1;} }
-    else { nLevel = 0; }
- return nLevel;
+int nGP = GetIdentifiedGPValue(oItem);
+return GetLevelOfItem(nGP);
 }
 //------------------------------------------------------------------
 string GetInventoryInfo(object oPC)
@@ -825,6 +735,7 @@ void DestroyInventory(object oPlaceable){
      if(GetIsObjectValid(oItem)) { DestroyObject(oItem, 0.2); }
    oItem = GetNextItemInInventory(oPlaceable); }
 }
+
 //------------------------------------------------------------------------------
 void KillInventory(object oTarget){
  object oTaker = oTarget;
@@ -854,69 +765,41 @@ void DeleteInventory(object oTarget){
 // Delete all equipped items of oTarget (Except for Creature Skin/Hide)
 void DeleteAllEquippedItems(object oTarget)
 {
- object oItem;
- oItem = GetItemInSlot(INVENTORY_SLOT_ARMS, oTarget);
- if(oItem != OBJECT_INVALID) { DestroyObject(oItem); }
- oItem = GetItemInSlot(INVENTORY_SLOT_ARROWS, oTarget);
- if(oItem != OBJECT_INVALID) { DestroyObject(oItem); }
- oItem = GetItemInSlot(INVENTORY_SLOT_BELT, oTarget);
- if(oItem != OBJECT_INVALID) { DestroyObject(oItem); }
- oItem = GetItemInSlot(INVENTORY_SLOT_BOLTS, oTarget);
- if(oItem != OBJECT_INVALID) { DestroyObject(oItem); }
- oItem = GetItemInSlot(INVENTORY_SLOT_BOOTS, oTarget);
- if(oItem != OBJECT_INVALID) { DestroyObject(oItem); }
- oItem = GetItemInSlot(INVENTORY_SLOT_BULLETS, oTarget);
- if(oItem != OBJECT_INVALID) { DestroyObject(oItem); }
- oItem = GetItemInSlot(INVENTORY_SLOT_CHEST, oTarget);
- if(oItem != OBJECT_INVALID) { DestroyObject(oItem); }
- oItem = GetItemInSlot(INVENTORY_SLOT_CLOAK, oTarget);
- if(oItem != OBJECT_INVALID) { DestroyObject(oItem); }
- oItem = GetItemInSlot(INVENTORY_SLOT_HEAD, oTarget);
- if(oItem != OBJECT_INVALID) { DestroyObject(oItem); }
- oItem = GetItemInSlot(INVENTORY_SLOT_LEFTHAND, oTarget);
- if(oItem != OBJECT_INVALID) { DestroyObject(oItem); }
- oItem = GetItemInSlot(INVENTORY_SLOT_LEFTRING, oTarget);
- if(oItem != OBJECT_INVALID) { DestroyObject(oItem); }
- oItem = GetItemInSlot(INVENTORY_SLOT_NECK, oTarget);
- if(oItem != OBJECT_INVALID) { DestroyObject(oItem); }
- oItem = GetItemInSlot(INVENTORY_SLOT_RIGHTHAND, oTarget);
- if(oItem != OBJECT_INVALID) { DestroyObject(oItem); }
- oItem = GetItemInSlot(INVENTORY_SLOT_RIGHTRING, oTarget);
- if(oItem != OBJECT_INVALID) { DestroyObject(oItem); }
+ if(GetObjectType(oTarget) == OBJECT_TYPE_CREATURE){
+ int i = 0; object oSlot = OBJECT_INVALID;
+ for(i=0;i<NUM_INVENTORY_SLOTS;i++){
+  oSlot = GetItemInSlot(i, oTarget);
+  if(i != INVENTORY_SLOT_CARMOUR){
+   if(GetIsObjectValid(oSlot)){ DestroyObject(oSlot); }  }} }
 }
 
 //------------------------------------------------------------------------------
 void TakeInventory(object oTarget, object oToHold=OBJECT_INVALID)
 {
-  if(!GetHasInventory(oTarget)) { return; }
+  if(oTarget != OBJECT_INVALID){
   object oItem = GetFirstItemInInventory(oTarget);
   while(GetIsObjectValid(oItem)){
-   if(oToHold != OBJECT_INVALID && GetHasInventory(oToHold))
-   { AssignCommand(oToHold, ActionTakeItem(oItem, oTarget)); }
-   else {  DestroyObject(oItem, 0.0);   }
-   oItem = GetNextItemInInventory(oTarget);
-  }
+   if(oToHold != OBJECT_INVALID){
+    AssignCommand(oToHold, ActionTakeItem(oItem, oTarget)); }
+   else { DestroyObject(oItem); }
+   oItem = GetNextItemInInventory(oTarget);  } }
 }
 
 //------------------------------------------------------------------------------
 void TakeAllObjectsByTag(object oToTake, string sItemTag, object oTarget)
 {
-  //Prevent the game from crashing
-  if(!GetHasInventory(oTarget) || !GetHasInventory(oToTake) ||
-     !GetIsObjectValid(oToTake) || !GetIsObjectValid(oTarget)) { return; }
+  if(!GetIsObjectValid(oToTake) || !GetIsObjectValid(oTarget)) { return; }
   object oItem = GetFirstItemInInventory(oTarget);
   while(GetIsObjectValid(oItem)) {
    if(GetTag(oItem) == sItemTag)
    { AssignCommand(oToTake, ActionTakeItem(oItem, oTarget));  }
-   oItem = GetNextItemInInventory(oTarget); }
+   oItem = GetNextItemInInventory(oTarget);  }
 }
 
 //------------------------------------------------------------------------------
 void TakeAllObjectsByResRef(object oToTake, string sResRef, object oTarget)
 {
-  //Prevent the game from crashing
-  if(!GetHasInventory(oTarget) || !GetHasInventory(oToTake) ||
-     !GetIsObjectValid(oToTake) || !GetIsObjectValid(oTarget)) { return; }
+  if(!GetIsObjectValid(oToTake) || !GetIsObjectValid(oTarget)) { return; }
   object oItem = GetFirstItemInInventory(oTarget);
   while(GetIsObjectValid(oItem))  {
    if(GetResRef(oItem) == sResRef)
@@ -927,10 +810,7 @@ void TakeAllObjectsByResRef(object oToTake, string sResRef, object oTarget)
 //------------------------------------------------------------------------------
 void GiveAllObjectsByTag(object oGiver, string sItemTag, object oReciever)
 {
-  //Prevent the game from crashing
-  if(!GetHasInventory(oGiver) || !GetHasInventory(oReciever) ||
-     !GetIsObjectValid(oGiver) || !GetIsObjectValid(oReciever))
-  { return; }
+  if(!GetIsObjectValid(oGiver) || !GetIsObjectValid(oReciever))  { return; }
   object oItem = GetFirstItemInInventory(oGiver);
   while(GetIsObjectValid(oItem))  {
    if(GetTag(oItem) == sItemTag)
@@ -941,10 +821,7 @@ void GiveAllObjectsByTag(object oGiver, string sItemTag, object oReciever)
 //------------------------------------------------------------------------------
 void GiveAllObjectsByResRef(object oGiver, string sResRef, object oReciever)
 {
-  //Prevent the game from crashing
-  if(!GetHasInventory(oGiver) || !GetHasInventory(oReciever) ||
-     !GetIsObjectValid(oGiver) || !GetIsObjectValid(oReciever))
-  { return; }
+  if(!GetIsObjectValid(oGiver) || !GetIsObjectValid(oReciever))  { return; }
   object oItem = GetFirstItemInInventory(oGiver);
   while(GetIsObjectValid(oItem))  {
    if(GetResRef(oItem) == sResRef)
@@ -959,8 +836,8 @@ void ForceUnequipItem(object oPC, object oItem, int bClearComabt = TRUE)
                         EffectCutsceneImmobilize(), oPC, 0.1);
     AssignCommand(oPC, ClearAllActions(bClearComabt));
     AssignCommand(oPC, ActionUnequipItem(oItem));
-    AssignCommand(oPC, ActionDoCommand(SetCommandable(TRUE)));
-    AssignCommand(oPC, SetCommandable(FALSE));
+    AssignCommand(oPC, ActionDoCommand(SetCommandable(TRUE, oPC)));
+    AssignCommand(oPC, SetCommandable(FALSE, oPC));
 }
 
 //------------------------------------------------------------------------------
@@ -970,8 +847,8 @@ void ForceEquipItem(object oPC, object oItem, int nSlot, int bClearComabt = TRUE
                         EffectCutsceneImmobilize(), oPC, 0.1);
     AssignCommand(oPC, ClearAllActions(bClearComabt));
     AssignCommand(oPC, ActionEquipItem(oItem, nSlot));
-    AssignCommand(oPC, ActionDoCommand(SetCommandable(TRUE)));
-    AssignCommand(oPC, SetCommandable(FALSE));
+    AssignCommand(oPC, ActionDoCommand(SetCommandable(TRUE, oPC)));
+    AssignCommand(oPC, SetCommandable(FALSE, oPC));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
