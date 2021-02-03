@@ -1,0 +1,389 @@
+int MULTI_PLAYER = FALSE; // Set this to TRUE if you are indeed not OFFLINE!
+
+//  gen_pc_inc   (A  Main Include Script)
+////////////////////////////////////////////////////////////////////////////////
+// Created By: Genisys / Guile
+// Created On: 1/16/2014
+////////////////////////////////////////////////////////////////////////////////
+// © Copyright 2014
+////////////////////////////////////////////////////////////////////////////////
+/*
+   All Functions for a PC Go Here, make sure you attach any special
+   includes that the PC will use or you will use on a PC in THIS include!
+   (But DO NOT Add any more bioware includes!)
+*/
+////////////////////////////////////////////////////////////////////////////////
+//Required Include(s)
+#include "gen_xp_inc"
+#include "gen_msg_inc"
+////////////////////////////////////////////////////////////////////////////////
+// Declare all Implementations & Prototypes...
+
+// Makes the PC friendly again to all of the Non-Hostile NPCs in the module..
+void ClearReputation(object oPC);
+
+// Returns TRUE if the PC is Polymorphed / Shape Shifted...
+int IsShifterMorphed(object oPC);
+
+// Returns the total numer of PCs in the area of oObject...
+// oObject Must NOT be invalid!
+int GetAreaPCCount(object oObject);
+
+// Returns TRUE if the PC HAS entered the module completely (after 6 seconds)
+// Useful for when you don't want code to run when the PC is logging in!
+int GetHasPCEnteredModule(object oPC);
+
+// This will return FALSE if the PC is NOT using a legal character!
+// This should only be run from the OnEnter Event for the module..!
+int IsLegalPC(object oPC);
+
+// Returns true if oPC has any Polymorph effect applied to them.
+int GetIsPCShifted(object oPC);
+
+// Returns a string of the class name at nPosition...
+string GetClassName(object oTarget, int nPosition);
+
+// Set that the PC has entered the module....
+// You should put this in a tracks trigger's OnEnter Script preferrably...
+void SetPCHasEnteredModule(object oPC);
+
+// Resurrect player, remove negative effects.
+void Raise(object oPC);
+
+// Boots oPC
+void BootPlayer(object oPC);
+
+// Respawn/Teleporter OnDeath function (By Bushido / Modified By Genisys)
+void Respawn(object oPlayer);
+
+// Safely jump a PC object to the location...
+void JumpSafeToLocation(location lLoc, object oPC = OBJECT_SELF);
+
+// Safely jump a PC to an Object
+void JumpSafeToObject(object oObj, object oPC = OBJECT_SELF);
+
+// Safely jump a PC to a waypoint
+void JumpSafeToWaypoint(string sWaypoint, object oPC = OBJECT_SELF);
+
+// This is the ExecuteScript() command, YOU must use the DelayCommand()
+// in conjunction with this command to set a true delay up..
+void DelayExecute(string sScript, object oObject);
+
+// Yes ALL PC's Characters!
+void SaveAllCharacters();
+
+// Yes EVERYONE
+void BootAllPlayers();
+
+//////////////////////////////////////////////////////////////////////////////////////
+// Define All Implementations
+
+//------------------------------------------------------------------------------
+void ClearReputation(object oPlayer){
+    // * make friendly to Each of the 3 common factions   (BIOWARE CODE)
+    AssignCommand(oPlayer, ClearAllActions());
+    if (GetStandardFactionReputation(STANDARD_FACTION_COMMONER, oPlayer) <= 10)
+    {   SetLocalInt(oPlayer, "NW_G_Playerhasbeenbad", 10); // * Player bad
+        SetStandardFactionReputation(STANDARD_FACTION_COMMONER, 80, oPlayer);    }
+    if (GetStandardFactionReputation(STANDARD_FACTION_MERCHANT, oPlayer) <= 10)
+    {   SetLocalInt(oPlayer, "NW_G_Playerhasbeenbad", 10); // * Player bad
+        SetStandardFactionReputation(STANDARD_FACTION_MERCHANT, 80, oPlayer);    }
+    if (GetStandardFactionReputation(STANDARD_FACTION_DEFENDER, oPlayer) <= 10)
+    {   SetLocalInt(oPlayer, "NW_G_Playerhasbeenbad", 10); // * Player bad
+        SetStandardFactionReputation(STANDARD_FACTION_DEFENDER, 80, oPlayer);    }
+}
+//------------------------------------------------------------------------------
+int IsShifterMorphed(object oPC){
+   if(GetHasSpellEffect(SPELL_POLYMORPH_SELF, oPC))  { return TRUE; }
+    if(GetHasSpellEffect(SPELL_SHAPECHANGE, oPC))  { return TRUE; }
+    if(GetHasSpellEffect(SPELL_TENSERS_TRANSFORMATION, oPC))  { return TRUE; }
+   effect ef = GetFirstEffect(oPC);
+   int iShifter = TRUE; int n;
+    while( GetEffectType(ef) != EFFECT_TYPE_INVALIDEFFECT && iShifter == TRUE)    {
+        n = GetEffectType(ef); if ( n == EFFECT_TYPE_POLYMORPH )
+            return TRUE;  ef = GetNextEffect(oPC);    }
+    if(iShifter){ return FALSE; }    return TRUE;
+}
+//------------------------------------------------------------------------------
+int GetAreaPCCount(object oObject){
+  int iPC = 0;
+  if(!GetIsObjectValid(oObject)) { return iPC; }
+  object oArea = GetArea(oObject);
+  object oPC = GetFirstObjectInArea(oArea);
+  while(GetIsObjectValid(oPC))  {
+   if(GetIsPC(oPC) && !GetIsDM(oPC) && !GetIsDMPossessed(oPC))
+   { iPC += 1; }
+   oPC =  GetNextObjectInArea(oArea);  }
+  return iPC;
+}
+//------------------------------------------------------------------------------
+int GetHasPCEnteredModule(object oPC)
+{
+ int nEntered = GetLocalInt(GetModule(), GetName(oPC) + "_" +
+                   GetPCPublicCDKey(oPC, MULTI_PLAYER) + "_ENTERED");
+    if(nEntered) { return TRUE; }
+    return FALSE;
+}
+
+//------------------------------------------------------------------------------
+// Run this code on the entering PC..
+int IsLegalPC(object oPC){
+  int nLegal = TRUE;
+  int nCalc; int nHD = GetHitDice(oPC);
+  int nMAXHP = ( nHD * 30 ); // Max = 30 HP
+  if(nHD >= 21)  { nCalc = ((nHD - 20) * 24); nMAXHP += nCalc; }
+  if(GetMaxHitPoints(oPC) > nMAXHP) { nLegal = FALSE; }
+  // Check Base Ability Scores
+  int nBase = 24 + (nHD / 4); // Base + Max Per Level
+  int nMABS, nTest;
+  if(nHD > 20)
+  { nTest = (nHD - 20);
+    if(nTest >= 3)
+    {    nMABS = nBase + ( nTest / 3); } // Adjust for Epic Feats...
+    else
+    { nMABS = nBase + 4; } // + 4 Max (Give some space for the unknown)
+  }
+  else
+  { nMABS = nBase; }
+
+  int nBAS = GetAbilityScore(oPC, ABILITY_CHARISMA, TRUE);
+  if(nBAS >= nMABS) { nLegal = FALSE; }
+  nBAS = GetAbilityScore(oPC, ABILITY_CONSTITUTION, TRUE);
+  if(nBAS >= nMABS) { nLegal = FALSE; }
+  nBAS = GetAbilityScore(oPC, ABILITY_DEXTERITY, TRUE);
+  if(nBAS >= nMABS) { nLegal = FALSE; }
+  nBAS = GetAbilityScore(oPC, ABILITY_INTELLIGENCE, TRUE);
+  if(nBAS >= nMABS) { nLegal = FALSE; }
+  nBAS = GetAbilityScore(oPC, ABILITY_STRENGTH, TRUE);
+  if(nBAS >= nMABS) { nLegal = FALSE; }
+  nBAS = GetAbilityScore(oPC, ABILITY_WISDOM, TRUE);
+  if(nBAS >= nMABS) { nLegal = FALSE; }
+
+  int nSkill;
+    int nMAXSKILL = nHD * 1;
+    nMAXSKILL += 20; // give some space for clearly cheating!
+    nSkill = GetSkillRank(SKILL_CONCENTRATION, oPC, TRUE);
+    if(nSkill > nMAXSKILL) { nLegal = FALSE; }
+    nSkill = GetSkillRank(SKILL_DISCIPLINE, oPC, TRUE);
+    if(nSkill > nMAXSKILL) { nLegal = FALSE; }
+    nSkill = GetSkillRank(SKILL_PARRY, oPC, TRUE);
+    if(nSkill > nMAXSKILL) { nLegal = FALSE; }
+    nSkill = GetSkillRank(SKILL_TUMBLE, oPC, TRUE);
+    if(nSkill > nMAXSKILL) { nLegal = FALSE; }
+
+  // Catch them with feats they aren't suppose to have...
+  if(GetHitDice(oPC) < 21) {
+    if(GetHasFeat(FEAT_EPIC_DAMAGE_REDUCTION_9, oPC)) { nLegal = FALSE; }
+    if(GetHasFeat(FEAT_EPIC_SELF_CONCEALMENT_50, oPC)) { nLegal = FALSE; }
+    if(GetHasFeat(FEAT_EPIC_BLINDING_SPEED, oPC)) { nLegal = FALSE; }
+    if(GetHasFeat(FEAT_EPIC_IMPROVED_SPELL_RESISTANCE_10, oPC)) { nLegal = FALSE; }
+    if(GetHasFeat(FEAT_EPIC_IMPROVED_STUNNING_FIST_10, oPC)) { nLegal = FALSE; }
+    if(GetHasFeat(FEAT_EPIC_IMPROVED_SNEAK_ATTACK_10, oPC)) { nLegal = FALSE; }
+    if(GetHasFeat(FEAT_EPIC_TOUGHNESS_10, oPC)) { nLegal = FALSE; }
+    if(GetHasFeat(FEAT_EPIC_GREAT_STRENGTH_10, oPC)) { nLegal = FALSE; }
+    if(GetHasFeat(FEAT_EPIC_GREAT_DEXTERITY_10, oPC)) { nLegal = FALSE; }
+
+    if(GetHasFeat(FEAT_EPIC_DEVASTATING_CRITICAL_RAPIER, oPC)) { nLegal = FALSE; }
+    if(GetHasFeat(FEAT_EPIC_DEVASTATING_CRITICAL_KAMA, oPC)) { nLegal = FALSE; }
+    if(GetHasFeat(FEAT_EPIC_DEVASTATING_CRITICAL_SCIMITAR, oPC)) { nLegal = FALSE; }
+    if(GetHasFeat(FEAT_EPIC_OVERWHELMING_CRITICAL_SCIMITAR, oPC)) { nLegal = FALSE; }
+    if(GetHasFeat(FEAT_EPIC_OVERWHELMING_CRITICAL_RAPIER, oPC)) { nLegal = FALSE; }
+    if(GetHasFeat(FEAT_EPIC_OVERWHELMING_CRITICAL_KAMA, oPC)) { nLegal = FALSE; }
+    if(GetHasFeat(FEAT_EPIC_WEAPON_FOCUS_KAMA, oPC)) { nLegal = FALSE; }
+    if(GetHasFeat(FEAT_EPIC_WEAPON_FOCUS_SCIMITAR, oPC)) { nLegal = FALSE; }
+    if(GetHasFeat(FEAT_EPIC_WEAPON_FOCUS_SCIMITAR, oPC)) { nLegal = FALSE; }
+    if(GetHasFeat(FEAT_EPIC_WEAPON_SPECIALIZATION_QUARTERSTAFF, oPC)) { nLegal = FALSE; }
+    if(GetHasFeat(FEAT_EPIC_WEAPON_SPECIALIZATION_RAPIER, oPC)) { nLegal = FALSE; }
+    if(GetHasFeat(FEAT_EPIC_WEAPON_SPECIALIZATION_SCIMITAR, oPC)) { nLegal = FALSE; }  }
+  if(!nLegal)
+  {
+    string sMsg = NEW_LINE;
+    sMsg += NEW_LINE + "ATTENTION DMs & ADMIN: Player ~ " + GetName(oPC);
+    sMsg += GetPCPlayerName(oPC) + " / " + GetPCPublicCDKey(oPC);
+    sMsg += NEW_LINE;
+    sMsg += "Has Logged in with an apparently illegal character!";
+    sMsg += NEW_LINE;
+    sMsg += "PLEASE INVESTIGATE" + NEW_LINE;
+    sMsg += NEW_LINE;
+    SendMessageToAllDMs(sMsg);
+    WriteTimestampedLogEntry(sMsg);  }
+  return nLegal;
+}
+//------------------------------------------------------------------
+int GetIsPCShifted(object oPC){
+   if(GetHasSpellEffect(SPELL_POLYMORPH_SELF, oPC))  { return TRUE; }
+    if(GetHasSpellEffect(SPELL_SHAPECHANGE, oPC))  { return TRUE; }
+    if(GetHasSpellEffect(SPELL_TENSERS_TRANSFORMATION, oPC))  { return TRUE; }
+   effect ef = GetFirstEffect(oPC);
+   int iShifter = TRUE; int n;
+    while( GetEffectType(ef) != EFFECT_TYPE_INVALIDEFFECT && iShifter == TRUE)    {
+        n = GetEffectType(ef); if ( n == EFFECT_TYPE_POLYMORPH )
+            return TRUE;  ef = GetNextEffect(oPC);    }
+    if(iShifter){ return FALSE; }    return TRUE;
+}
+//------------------------------------------------------------------
+string GetClassName(object oTarget, int nPosition)
+{
+    string sClassLevels = "";
+    int iClsIdx;
+    int iClsType;
+    string sClsName;
+    string sLvl, sName, sColor, sFinal;
+    int iClsLvl;
+
+
+        iClsType = GetClassByPosition(nPosition, oTarget);
+
+        if (iClsType != CLASS_TYPE_INVALID)
+        {
+            switch (iClsType) {
+
+                case CLASS_TYPE_ARCANE_ARCHER: sClsName = "Arcane Archer"; break;
+                case CLASS_TYPE_ASSASSIN: sClsName = "Assassin"; break;
+                case CLASS_TYPE_BARBARIAN: sClsName = "Barbarian"; break;
+                case CLASS_TYPE_BARD: sClsName = "Bard"; break;
+                case CLASS_TYPE_BLACKGUARD: sClsName = "Blackguard"; break;
+                case CLASS_TYPE_CLERIC: sClsName = "Cleric"; break;
+                case CLASS_TYPE_DIVINECHAMPION: sClsName = "Champion of Torm"; break;
+                case CLASS_TYPE_DRAGONDISCIPLE: sClsName = "Red Dragon Disciple"; break;
+                case CLASS_TYPE_DRUID: sClsName = "Druid"; break;
+                case CLASS_TYPE_DWARVENDEFENDER: sClsName = "Dwarven Defender"; break;
+                case CLASS_TYPE_FIGHTER: sClsName = "Fighter"; break;
+                case CLASS_TYPE_HARPER: sClsName = "Harper Scout"; break;
+                case CLASS_TYPE_MONK: sClsName = "Monk"; break;
+                case CLASS_TYPE_PALADIN: sClsName = "Palidin"; break;
+                case CLASS_TYPE_PALEMASTER: sClsName = "Pale Master"; break;
+                case CLASS_TYPE_PURPLE_DRAGON_KNIGHT: sClsName = "Puple Dragon Knight"; break;
+                case CLASS_TYPE_RANGER: sClsName = "Ranger"; break;
+                case CLASS_TYPE_ROGUE: sClsName = "Rogue"; break;
+                case CLASS_TYPE_SHADOWDANCER: sClsName = "Shadow Dancer"; break;
+                case CLASS_TYPE_SHIFTER: sClsName = "Shifter"; break;
+                case CLASS_TYPE_SORCERER: sClsName = "Sorcerer"; break;
+                case CLASS_TYPE_WEAPON_MASTER: sClsName = "Weapon Master"; break;
+                case CLASS_TYPE_WIZARD: sClsName = "Wizard"; break;
+
+                default: sClsName = "?" + IntToString(iClsType) + "?";
+               }
+
+
+            sName = sClsName;
+
+            iClsLvl = GetLevelByClass(iClsType, oTarget);
+            sLvl = IntToString(iClsLvl);
+
+            sColor = SetColorText(sLvl, 4);
+            sColor += SetColorText(" Lvl: ", 7);
+            sColor += SetColorText(sName, 3);
+            sFinal = sColor + "\n";
+         }
+         else
+         { sFinal = "";}
+
+    return sFinal;
+}
+//------------------------------------------------------------------------------
+void SetPCHasEnteredModule(object oPC)
+{ // This is 100% reliable, because the variable goes away after reset...
+  SetLocalInt(GetModule(), GetName(oPC) + "_" +
+              GetPCPublicCDKey(oPC, MULTI_PLAYER) + "_ENTERED", TRUE);
+}
+//------------------------------------------------------------------------------
+void RemovePCHasEnteredModule(object oPC)
+{ // We will remove the int on Player Leaving NWNX Script...
+  DeleteLocalInt(GetModule(), GetName(oPC) + "_" +
+              GetPCPublicCDKey(oPC, MULTI_PLAYER) + "_ENTERED");
+}
+//------------------------------------------------------------------
+void BootPlayer(object oPC){
+    if(GetIsObjectValid(oPC)) BootPC(oPC);
+}
+//------------------------------------------------------------------
+void Raise(object oPlayer){
+
+    effect eVisual = EffectVisualEffect(VFX_IMP_RESTORATION);
+    effect eBad = GetFirstEffect(oPlayer);
+    ApplyEffectToObject(DURATION_TYPE_INSTANT,EffectResurrection(), oPlayer);
+    ApplyEffectToObject(DURATION_TYPE_INSTANT,EffectHeal(GetMaxHitPoints(oPlayer)), oPlayer);
+
+    //Search for negative effects
+    while(GetIsEffectValid(eBad)){
+        if (GetEffectType(eBad) == EFFECT_TYPE_ABILITY_DECREASE ||
+        GetEffectType(eBad) == EFFECT_TYPE_AC_DECREASE ||
+        GetEffectType(eBad) == EFFECT_TYPE_ATTACK_DECREASE ||
+        GetEffectType(eBad) == EFFECT_TYPE_DAMAGE_DECREASE ||
+        GetEffectType(eBad) == EFFECT_TYPE_DAMAGE_IMMUNITY_DECREASE ||
+        GetEffectType(eBad) == EFFECT_TYPE_SAVING_THROW_DECREASE ||
+        GetEffectType(eBad) == EFFECT_TYPE_SPELL_RESISTANCE_DECREASE ||
+        GetEffectType(eBad) == EFFECT_TYPE_SKILL_DECREASE ||
+        GetEffectType(eBad) == EFFECT_TYPE_BLINDNESS ||
+        GetEffectType(eBad) == EFFECT_TYPE_DEAF ||
+        GetEffectType(eBad) == EFFECT_TYPE_PARALYZE ||
+        GetEffectType(eBad) == EFFECT_TYPE_NEGATIVELEVEL){
+            //Remove effect if it is negative.
+            RemoveEffect(oPlayer, eBad);
+        }
+        eBad = GetNextEffect(oPlayer);
+    }
+
+    //Fire cast spell at event for the specified target
+    SignalEvent(oPlayer, EventSpellCastAt(OBJECT_SELF, SPELL_RESTORATION, FALSE));
+    ApplyEffectToObject(DURATION_TYPE_INSTANT, eVisual, oPlayer);
+}
+//------------------------------------------------------------------
+void DelayExecute(string sScript, object oObject){
+  ExecuteScript(sScript, oObject);
+}
+//------------------------------------------------------------------
+void JumpSafeToLocation(location lLoc, object oPC = OBJECT_SELF){
+   if(GetAreaFromLocation(lLoc) != OBJECT_INVALID)   {
+    ApplyEffectToObject(DURATION_TYPE_TEMPORARY, EffectCutsceneImmobilize(), oPC, 0.1);
+    AssignCommand(oPC, ClearAllActions(TRUE));
+    AssignCommand(oPC, JumpToLocation(lLoc));
+    AssignCommand(oPC, ActionDoCommand(SetCommandable(TRUE)));
+    AssignCommand(oPC, SetCommandable(FALSE));   }
+   else{
+    FloatingTextStringOnCreature("Area NOT Valid!", oPC);   }
+}
+//------------------------------------------------------------------
+void JumpSafeToObject(object oObj, object oPC = OBJECT_SELF){
+   if(oObj != OBJECT_INVALID) {
+    ApplyEffectToObject(DURATION_TYPE_TEMPORARY, EffectCutsceneImmobilize(), oPC, 0.1);
+    AssignCommand(oPC, ClearAllActions(TRUE));
+    AssignCommand(oPC, JumpToObject(oObj));
+    AssignCommand(oPC, ActionDoCommand(SetCommandable(TRUE)));
+    AssignCommand(oPC, SetCommandable(FALSE));   }
+   else   {
+    FloatingTextStringOnCreature("The Object is NOT Valid!", oPC);   }
+}
+//------------------------------------------------------------------
+void JumpSafeToWaypoint(string sWaypoint, object oPC = OBJECT_SELF){
+    object oWay = GetWaypointByTag(sWaypoint);
+    if(oWay != OBJECT_INVALID) {
+     ApplyEffectToObject(DURATION_TYPE_TEMPORARY, EffectCutsceneImmobilize(), oPC, 0.1);
+     AssignCommand(oPC, ClearAllActions(TRUE));
+     AssignCommand(oPC, JumpToObject(GetWaypointByTag(sWaypoint)));
+     AssignCommand(oPC, ActionDoCommand(SetCommandable(TRUE)));
+     AssignCommand(oPC, SetCommandable(FALSE));    }
+    else   {
+    FloatingTextStringOnCreature(
+    "The Waypoint Tagnamed (" + sWaypoint + ") is NOT Valid!", oPC);
+    WriteTimestampedLogEntry("****** ATTENTION ADMINISTRATOR *******" +
+    "\n" + "The Waypoint Tagnamed (" + sWaypoint + ") is NOT Valid!");   }
+}
+//------------------------------------------------------------------------------
+void SaveAllCharacters(){
+  object oPC = GetFirstPC();  while(GetIsObjectValid(oPC)) {
+  if(!GetIsPCShifted(oPC)){ ExportSingleCharacter(oPC); }  oPC = GetNextPC(); }
+}
+//------------------------------------------------------------------------------
+void BootAllPlayers(){
+ object oPC = GetFirstPC();
+ while(GetIsObjectValid(oPC)) {
+  BootPC(oPC);  oPC = GetNextPC(); }
+}
+//------------------------------------------------------------------------------
+void CheckPCLocation(object oPC){
+ if(GetLocalInt(GetArea(oPC), "START_AREA") >= 1)
+ {  JumpSafeToWaypoint("home", oPC); }
+}
+////////////////////////////////////////////////////////////////////////////////
