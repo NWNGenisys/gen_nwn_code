@@ -1,0 +1,49 @@
+// gen_effect_inc
+//////////////////////////////////////////////////////
+// Created by: Genisys / Guile
+// Created on: 12/22/2023
+////////////////////////////////////////////////////////////////////////////////
+// 100% Open Resources for Neverwinter Nights Enhanced Edition Only
+// This will NOT work in the Diamond Edition of the game!
+////////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////
+// Required Includes...  (none)
+
+////////////////////////////////////////////////////////////////////////////////
+// I N T E R F A C E
+
+// Adds the temporary eEffect to oTarget, by sTag, for fDuration
+void AddTemporaryEffectByTag(effect eEffect, object oTarget, string sTag, float fDuration);
+
+// Adds the permanent eEffect to oTarget, by sTag
+void AddPermanentEffectByTag(effect eEffect, object oTarget, string sTag);
+
+// Removes all effects on oTarget by sTag
+void RemoveAllTemporaryEffectsByTag(object oTarget, string sTag);
+
+////////////////////////////////////////////////////////////////////////////////
+// I M P L E M E N T A T I O N
+
+//============================================================================
+void AddTemporaryEffectByTag(effect eEffect, object oTarget, string sTag, float fDuration){
+ if(GetIsObjectValid(oTarget)){
+  eEffect = TagEffect(eEffect, sTag);
+  if(fDuration < 0.5){ fDuration = 0.5; } // Minimum 1/2 a second!
+  ApplyEffectToObject(DURATION_TYPE_TEMPORARY, eEffect, oTarget, fDuration);}
+}
+//============================================================================
+void AddPermanentEffectByTag(effect eEffect, object oTarget, string sTag){
+ if(GetIsObjectValid(oTarget)){
+  eEffect = TagEffect(eEffect, sTag);
+  ApplyEffectToObject(DURATION_TYPE_PERMANENT, eEffect, oTarget);  }
+}
+//============================================================================
+void RemoveAllTemporaryEffectsByTag(object oTarget, string sTag){
+  if(GetIsObjectValid(oTarget)){
+   effect e = GetFirstEffect(oTarget); while(GetIsEffectValid(e)){
+    if(GetEffectTag(e) == sTag){ RemoveEffect(oTarget, e); }
+   e = GetNextEffect(oTarget); }  }
+}
+
+////////////////////////////////////////////////////////////////////////////////
