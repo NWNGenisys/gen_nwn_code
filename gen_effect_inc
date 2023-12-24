@@ -58,6 +58,7 @@ void AddTemporaryEffectByTag(effect eEffect, object oTarget, string sTag, float 
 //============================================================================
 void AddPermanentEffectByTag(effect eEffect, object oTarget, string sTag){
  if(GetIsObjectValid(oTarget)){
+  eEffect = UnyieldingEffect(eEffect); // Make it 100% Permanent!
   eEffect = TagEffect(eEffect, sTag);
   ApplyEffectToObject(DURATION_TYPE_PERMANENT, eEffect, oTarget);  }
 }
