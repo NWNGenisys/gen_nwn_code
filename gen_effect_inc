@@ -2,13 +2,12 @@
 //////////////////////////////////////////////////////
 // Created by: Genisys / Guile
 // Created on: 12/22/2023
-////////////////////////////////////////////////////////////////////////////////
-// 100% Open Resources for Neverwinter Nights Enhanced Edition Only
-// This will NOT work in the Diamond Edition of the game!
-////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////
+// 100% Open Resources for Neverwinter Nights Only
+//////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////////////
-// Required Includes...  (none)
+// Required Includes...
 
 ////////////////////////////////////////////////////////////////////////////////
 // I N T E R F A C E
@@ -19,12 +18,36 @@ void AddTemporaryEffectByTag(effect eEffect, object oTarget, string sTag, float 
 // Adds the permanent eEffect to oTarget, by sTag
 void AddPermanentEffectByTag(effect eEffect, object oTarget, string sTag);
 
-// Removes all effects on oTarget by sTag
+// Removes all temporary effects on oTarget by sTag
 void RemoveAllTemporaryEffectsByTag(object oTarget, string sTag);
+
+// Removes all temporary effects on oTarget by sTag
+void RemoveAllPermanentEffectsByTag(object oTarget, string sTag);
+
+// Removes ALL effects on oTarget by sTag
+void RemoveAllEffectsByTag(object oTarget, string sTag);
+
+// This changes oTarget's size (Appearance Only)
+// fScale is how big or smaller you wish to make it (1.5 = +50%) (0.5 = -50%)
+// NOTE: Changes are PERMANENT on PWs (Otherwise you have to export character)
+void AddScaleEffect(object oTarget, float fScale = 1.5);
+
+// This returns oTarget back to their default size
+void RemoveScaleEffect(object oTarget);
 
 ////////////////////////////////////////////////////////////////////////////////
 // I M P L E M E N T A T I O N
 
+//============================================================================
+void AddScaleEffect(object oTarget, float fScale = 1.5){
+  SetObjectVisualTransform(oTarget, OBJECT_VISUAL_TRANSFORM_SCALE, fScale,
+   OBJECT_VISUAL_TRANSFORM_LERP_NONE);
+}
+//============================================================================
+void RemoveScaleEffect(object oTarget){
+  SetObjectVisualTransform(oTarget, OBJECT_VISUAL_TRANSFORM_SCALE, 1.0,
+   OBJECT_VISUAL_TRANSFORM_LERP_NONE);
+}
 //============================================================================
 void AddTemporaryEffectByTag(effect eEffect, object oTarget, string sTag, float fDuration){
  if(GetIsObjectValid(oTarget)){
@@ -42,8 +65,21 @@ void AddPermanentEffectByTag(effect eEffect, object oTarget, string sTag){
 void RemoveAllTemporaryEffectsByTag(object oTarget, string sTag){
   if(GetIsObjectValid(oTarget)){
    effect e = GetFirstEffect(oTarget); while(GetIsEffectValid(e)){
-    if(GetEffectTag(e) == sTag){ RemoveEffect(oTarget, e); }
-   e = GetNextEffect(oTarget); }  }
+    if(GetEffectTag(e) == sTag && GetEffectDurationType(e) == DURATION_TYPE_TEMPORARY){
+     RemoveEffect(oTarget, e); }  e = GetNextEffect(oTarget); }  }
 }
-
+//============================================================================
+void RemoveAllPermanentEffectsByTag(object oTarget, string sTag){
+  if(GetIsObjectValid(oTarget)){
+   effect e = GetFirstEffect(oTarget); while(GetIsEffectValid(e)){
+    if(GetEffectTag(e) == sTag && GetEffectDurationType(e) == DURATION_TYPE_PERMANENT){
+     RemoveEffect(oTarget, e); }  e = GetNextEffect(oTarget); }  }
+}
+//============================================================================
+void RemoveAllEffectsByTag(object oTarget, string sTag){
+  if(GetIsObjectValid(oTarget)){
+   effect e = GetFirstEffect(oTarget); while(GetIsEffectValid(e)){
+    if(GetEffectTag(e) == sTag){ RemoveEffect(oTarget, e); }
+  e = GetNextEffect(oTarget); }  }
+}
 ////////////////////////////////////////////////////////////////////////////////
